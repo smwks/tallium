@@ -178,11 +178,11 @@ new class extends Component {
 } ?>
 
 <section class="w-full">
-    @include('partials.settings-heading')
+    @include('pages.settings.partials.heading')
 
     <flux:heading class="sr-only">{{ __('Two-Factor Authentication Settings') }}</flux:heading>
 
-    <x-pages::settings.layout
+    <x-pages::settings.container
         :heading="__('Two Factor Authentication')"
         :subheading="__('Manage your two-factor authentication settings')"
     >
@@ -231,7 +231,7 @@ new class extends Component {
                 </div>
             @endif
         </div>
-    </x-pages::settings.layout>
+    </x-pages::settings.container>
 
     <flux:modal
         name="two-factor-setup-modal"

@@ -1,7 +1,7 @@
 <?php
 
 use App\Concerns\PasswordValidationRules;
-use App\Livewire\Actions\Logout;
+use App\Livewire\Actions\LogoutX;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -13,13 +13,20 @@ new class extends Component {
     /**
      * Delete the currently authenticated user.
      */
-    public function deleteUser(Logout $logout): void
+    public function deleteUser(): void
     {
         $this->validate([
             'password' => $this->currentPasswordRules(),
         ]);
 
-        tap(Auth::user(), $logout(...))->delete();
+        tap(Auth::user(), function () {
+            Auth::guard('web')->logout();
+
+            Session::invalidate();
+            Session::regenerateToken();
+
+            return redirect('/');
+        })->delete();
 
         $this->redirect('/', navigate: true);
     }
@@ -32,7 +39,9 @@ new class extends Component {
     </div>
 
     <flux:modal.trigger name="confirm-user-deletion">
-        <flux:button variant="danger" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')" data-test="delete-user-button">
+        <flux:button
+            variant="danger" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
+            data-test="delete-user-button">
             {{ __('Delete account') }}
         </flux:button>
     </flux:modal.trigger>
@@ -47,7 +56,7 @@ new class extends Component {
                 </flux:subheading>
             </div>
 
-            <flux:input wire:model="password" :label="__('Password')" type="password" />
+            <flux:input wire:model="password" :label="__('Password')" type="password"/>
 
             <div class="flex justify-end space-x-2 rtl:space-x-reverse">
                 <flux:modal.close>
