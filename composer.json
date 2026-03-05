@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/livewire-starter-kit",
+    "name": "smwks/tallium",
     "type": "project",
-    "description": "The official Laravel starter kit for Livewire.",
+    "description": "A TALL stack starter kit, focus on livewire single file components. AI coding friendly.",
     "keywords": [
         "laravel",
         "framework"
@@ -11,7 +11,7 @@
     "require": {
         "php": "^8.2",
         "laravel/fortify": "^1.30",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^13.0",
         "laravel/tinker": "^2.10.1",
         "livewire/blaze": "^1.0",
         "livewire/flux": "^2.9.0",
@@ -19,9 +19,9 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "laravel/boost": "v2.1.4",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.24",
-        "laravel/sail": "^1.41",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^11.5.3"

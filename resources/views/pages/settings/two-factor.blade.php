@@ -49,11 +49,11 @@ new #[Title('Two-factor authentication')] class extends Component {
 } ?>
 
 <section class="w-full">
-    @include('partials.settings-heading')
+    @include('pages.settings.partials.heading')
 
     <flux:heading class="sr-only">{{ __('Two-factor authentication settings') }}</flux:heading>
 
-    <x-pages::settings.layout
+    <x-pages::settings.container
         :heading="__('Two-factor authentication')"
         :subheading="__('Manage your two-factor authentication settings')"
     >
@@ -106,5 +106,5 @@ new #[Title('Two-factor authentication')] class extends Component {
                 </div>
             @endif
         </div>
-    </x-pages::settings.layout>
+    </x-pages::settings.container>
 </section>
