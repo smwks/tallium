@@ -1,11 +1,31 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Laravel\Fortify\Features;
 
-Route::view('/', 'welcome')->name('home');
+Route::view('/', 'pages.welcome')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+Route::view('dashboard', 'pages.dashboard')
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+
+Route::middleware(['auth'])->group(function () {
+    Route::redirect('settings', 'settings/profile');
+
+    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 });
 
-require __DIR__.'/settings.php';
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
+
+    Route::livewire('settings/security', 'pages::settings.security')
+        ->middleware(
+            when(
+                Features::canManageTwoFactorAuthentication()
+                    && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword'),
+                ['password.confirm'],
+                [],
+            ),
+        )
+        ->name('security.edit');
+});
