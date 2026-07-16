@@ -4,7 +4,8 @@ A streamlined [TALL stack](https://tallstack.dev) starter kit for Laravel, built
 
 ## What's Included
 
-- **Laravel 13** with [Fortify](https://laravel.com/docs/fortify) authentication (login, registration, password reset, email verification, two-factor auth)
+- **Laravel 13** with [Fortify](https://laravel.com/docs/fortify) authentication (login, registration, password reset, email verification, two-factor auth, passkeys)
+- **[Chisel](https://github.com/laravel/chisel)** build-time feature toggles -- `install:features` lets consumers opt in/out of registration, email verification, 2FA, passkeys, and password confirmation, same as the official starter kit
 - **Livewire 4** with single-file page components (`Route::livewire()`)
 - **[Flux UI](https://fluxui.dev)** component library
 - **Tailwind CSS 4** with dark mode
@@ -20,6 +21,7 @@ TALLium consolidates the official starter kit to reduce pattern variability and 
 - **Routes consolidated into `routes/web.php`** -- no separate `routes/settings.php`.
 - **Dynamic brand logo** -- generates a monogram from `config('app.name')` instead of a hardcoded SVG.
 - **Removed `app/Livewire/Actions/`** -- logout is handled inline. Less indirection.
+- **Chisel adopted as-is** -- `chisel.php` and `chisel-paths.php` are kept and retargeted at TALLium's consolidated `pages/` structure, so the `install:features` toggle prompt (registration, email verification, 2FA, passkeys, password confirmation) still works exactly as it does in the official kit.
 
 ## Getting Started
 
@@ -53,6 +55,8 @@ composer test          # Run linter + test suite
 ## Project Structure
 
 ```
+chisel.php                                  # Feature-toggle script (install:features)
+chisel-paths.php                            # File-path overrides for chisel, retargeted at pages/
 routes/web.php                              # All routes
 resources/views/
   layouts/
@@ -65,15 +69,20 @@ resources/views/
     dashboard.blade.php                     # Dashboard
     settings/
       profile.blade.php                     # Profile settings (Livewire)
-      security.blade.php                    # Security settings (password + 2FA)
+      security.blade.php                    # Security settings (password + 2FA + passkeys)
       appearance.blade.php                  # Appearance settings (Livewire)
       container.blade.php                   # Settings layout wrapper
-      delete-user-form.blade.php            # Account deletion form
+      delete-user-form.blade.php            # Account deletion trigger + modal wrapper
+      delete-user-modal.blade.php           # Account deletion confirmation (Livewire)
+      two-factor-setup-modal.blade.php      # 2FA enrollment modal (Livewire)
+      two-factor/recovery-codes.blade.php   # 2FA recovery codes (Livewire)
       partials/heading.blade.php            # Settings page header
   components/
     app-logo.blade.php                      # Sidebar brand component
     app-logo-icon.blade.php                 # Dynamic monogram icon
     desktop-user-menu.blade.php             # User dropdown menu
+    passkey-registration.blade.php          # Passkey enrollment (Alpine + WebAuthn)
+    passkey-verify.blade.php                # Passkey verification prompt
 ```
 
 ## License
@@ -90,7 +99,9 @@ Apply these steps in order to a fresh clone of the upstream kit.
 
 **Goal:** Consolidate layout variants, enforce a single layout per context, move all pages under
 `resources/views/pages/`, consolidate routes into `routes/web.php`, replace the hardcoded brand
-SVG with a dynamic monogram, and remove indirection (Logout action class, multiple layout shims).
+SVG with a dynamic monogram, remove indirection (Logout action class, multiple layout shims), and
+adopt upstream's chisel feature-toggle system (and passkeys) as-is, retargeted at the consolidated
+file layout.
 
 ### Overview of changes
 
@@ -98,8 +109,13 @@ SVG with a dynamic monogram, and remove indirection (Logout action class, multip
 |----------|-------|---------|
 | Delete   | 7     | Logout action, 2 app layout variants, 3 auth layout variants, settings route file |
 | Rename   | 5     | head partial, dashboard, settings layout→container, settings heading, welcome |
-| Modify   | 9     | .gitignore, composer.json, seeder, 2 components, 2 layouts, 3 settings pages, routes/web.php |
+| Modify   | 12    | .gitignore, composer.json, seeder, 2 components, 2 layouts, 3 settings pages, routes/web.php, chisel.php, chisel-paths.php |
 | Create   | 1     | `layouts/guest.blade.php` |
+
+Chisel and passkeys themselves are **not** TALLium-specific additions -- they ship with the
+official starter kit as of the versions this recipe targets. The only TALLium-specific work is
+retargeting `chisel.php` / `chisel-paths.php` at the consolidated `pages/` layout (Step 8) and
+fixing the one file the original Logout-removal step missed (Step 3).
 
 ---
 
@@ -131,6 +147,10 @@ git rm routes/settings.php
 layout variants (card/simple/split) are collapsed into a single `auth.blade.php`. The two app
 layout variants (header/sidebar) are collapsed into a single `app.blade.php`. Settings routes are
 merged into `routes/web.php`.
+
+**Gotcha:** `resources/views/pages/settings/delete-user-modal.blade.php` also constructor-injects
+`App\Livewire\Actions\Logout` in its `deleteUser()` method. Deleting `Logout.php` breaks it — see
+the fix in Step 3.
 
 ---
 
@@ -199,6 +219,45 @@ Add one line at the end:
          "laravel/pint": "^1.27",
 -        "laravel/sail": "^1.53",
          "mockery/mockery": "^1.6",
+```
+
+#### `resources/views/pages/settings/delete-user-modal.blade.php`
+
+Replaces the injected `Logout` action (deleted in Step 1) with the same three calls it made,
+inlined directly in `deleteUser()`:
+
+```diff
+ use App\Concerns\PasswordValidationRules;
+-use App\Livewire\Actions\Logout;
+ use Illuminate\Support\Facades\Auth;
++use Illuminate\Support\Facades\Session;
+ use Livewire\Component;
+
+ new class extends Component {
+     use PasswordValidationRules;
+
+     public string $password = '';
+
+-    public function deleteUser(Logout $logout): void
++    public function deleteUser(): void
+     {
+         $this->validate([
+             'password' => $this->currentPasswordRules(),
+         ]);
+
+-        tap(Auth::user(), $logout(...))->delete();
++        $user = Auth::user();
++
++        Auth::guard('web')->logout();
++
++        Session::invalidate();
++        Session::regenerateToken();
++
++        $user->delete();
+
+         $this->redirect('/', navigate: true);
+     }
+ }; ?>
 ```
 
 #### `database/seeders/DatabaseSeeder.php`
@@ -590,14 +649,14 @@ The resulting `guest.blade.php` has this shape (CSS block abbreviated):
 ### Step 7 — Replace `routes/web.php`
 
 The old file required `routes/settings.php` (deleted in Step 1) and used bare view names.
-Replace entirely with the consolidated version that uses `pages.*` view names and inlines all
-settings routes:
+Replace entirely with the consolidated version that uses `pages.*` view names, inlines all
+settings routes, and keeps upstream's `@chisel-*` markers so `install:features` can still strip
+the password-confirmation middleware and the passkeys route when those features are disabled:
 
 ```diff
  <?php
 
  use Illuminate\Support\Facades\Route;
-+use Laravel\Fortify\Features;
 
 -Route::view('/', 'welcome')->name('home');
 +Route::view('/', 'pages.welcome')->name('home');
@@ -620,17 +679,58 @@ settings routes:
 
 -require __DIR__.'/settings.php';
 +    Route::livewire('settings/security', 'pages::settings.security')
-+        ->middleware(
-+            when(
-+                Features::canManageTwoFactorAuthentication()
-+                    && Features::optionEnabled(Features::twoFactorAuthentication(), 'confirmPassword'),
-+                ['password.confirm'],
-+                [],
-+            ),
-+        )
++        /* @chisel-password-confirmation */
++        ->middleware([
++            'password.confirm',
++        ])
++        /* @end-chisel-password-confirmation */
 +        ->name('security.edit');
 +});
++
++/* @chisel-passkeys */
++Route::get('.well-known/passkey-endpoints', function () {
++    return response()->json([
++        'enroll' => route('security.edit'),
++        'manage' => route('security.edit'),
++    ]);
++})->name('well-known.passkeys');
++/* @end-chisel-passkeys */
 ```
+
+---
+
+### Step 8 — Adapt chisel to TALLium's file layout
+
+Upstream ships `chisel.php` and `chisel-paths.php` at the project root, driving the
+`install:features {--answers=}` command. Both encode assumptions from upstream's
+Single-File-Component / Multi-File-Component folder layouts that don't hold once pages move
+under `resources/views/pages/` (Step 2/5) and settings routes are inlined into `routes/web.php`
+(Step 1/7). Two fixes are required — everything else in chisel works unmodified.
+
+#### `chisel-paths.php`
+
+Only the `welcome` entry is stale (it still points at the pre-Step-2 location):
+
+```diff
+-    'welcome' => 'resources/views/welcome.blade.php',
++    'welcome' => 'resources/views/pages/welcome.blade.php',
+```
+
+#### `chisel.php`
+
+The `2fa`, `passkeys`, and `password-confirmation` `->selected(...)` closures hardcode
+`'routes/settings.php'` in six places (both the `then:` and `else:` branches) — a file deleted in
+Step 1. Point them at the consolidated `routes/web.php` instead:
+
+```bash
+sed -i '' "s/'routes\/settings\.php'/'routes\/web.php'/g" chisel.php
+```
+
+**Why:** Without these two fixes, `install:features` throws when it tries to
+`removeSection`/`removeSectionMarkers` on a path that no longer exists (`routes/settings.php`), or
+silently no-ops on the `welcome` chisel markers because it's looking at the wrong file. Nothing
+else about chisel's behavior changes — toggles, defaults, and the `@chisel-*` marker names are
+adopted as-is from upstream.
 
 ---
 

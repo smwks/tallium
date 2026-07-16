@@ -139,7 +139,7 @@ return Chisel::script(__DIR__)
                 'database/factories/UserFactory.php',
                 'config/fortify.php',
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Settings/SecurityTest.php',
                 ...$paths['security_files'],
             )->removeSectionMarkers('2fa');
@@ -154,7 +154,7 @@ return Chisel::script(__DIR__)
                 'database/factories/UserFactory.php',
                 'config/fortify.php',
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Settings/SecurityTest.php',
                 ...$paths['security_files'],
             )->removeSection('2fa');
@@ -174,7 +174,7 @@ return Chisel::script(__DIR__)
             $c->files(
                 'config/fortify.php',
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Auth/AuthenticationTest.php',
                 'tests/Feature/Settings/SecurityTest.php',
                 'vite.config.js',
@@ -193,7 +193,7 @@ return Chisel::script(__DIR__)
             $c->files(
                 'config/fortify.php',
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Auth/AuthenticationTest.php',
                 'tests/Feature/Settings/SecurityTest.php',
                 'vite.config.js',
@@ -219,7 +219,7 @@ return Chisel::script(__DIR__)
         then: function (Chisel $c) {
             $c->files(
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Settings/SecurityTest.php',
             )->removeSectionMarkers('password-confirmation');
         },
@@ -229,7 +229,7 @@ return Chisel::script(__DIR__)
 
             $c->files(
                 'app/Providers/FortifyServiceProvider.php',
-                'routes/settings.php',
+                'routes/web.php',
                 'tests/Feature/Settings/SecurityTest.php',
             )->removeSection('password-confirmation');
 
