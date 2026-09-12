@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'welcome' => 'resources/views/welcome.blade.php',
+    'welcome' => 'resources/views/pages/welcome.blade.php',
     'login' => 'resources/views/pages/auth/login.blade.php',
     'register' => 'resources/views/pages/auth/register.blade.php',
     'confirm_password' => 'resources/views/pages/auth/confirm-password.blade.php',

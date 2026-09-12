@@ -2,10 +2,35 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+Route::view('/', 'pages.welcome')->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+Route::view('dashboard', 'pages.dashboard')
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+
+Route::middleware(['auth'])->group(function () {
+    Route::redirect('settings', 'settings/profile');
+
+    Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 });
 
-require __DIR__.'/settings.php';
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::livewire('settings/appearance', 'pages::settings.appearance')->name('appearance.edit');
+
+    Route::livewire('settings/security', 'pages::settings.security')
+        /* @chisel-password-confirmation */
+        ->middleware([
+            'password.confirm',
+        ])
+        /* @end-chisel-password-confirmation */
+        ->name('security.edit');
+});
+
+/* @chisel-passkeys */
+Route::get('.well-known/passkey-endpoints', function () {
+    return response()->json([
+        'enroll' => route('security.edit'),
+        'manage' => route('security.edit'),
+    ]);
+})->name('well-known.passkeys');
+/* @end-chisel-passkeys */
